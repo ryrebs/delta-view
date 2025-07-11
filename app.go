@@ -5,12 +5,36 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 )
+
+const ROW_LIMIT = 1000
 
 // App struct
 type App struct {
-	ctx context.Context
-	db  *sql.DB
+	ctx        context.Context
+	db         *sql.DB
+	tableInfos []TableInfo
+}
+
+func (a *App) addTableInfo(tblInfo TableInfo) {
+	a.tableInfos = append(a.tableInfos, tblInfo)
+}
+
+func (a *App) getTableInfo(tblPath string) *TableInfo {
+	for _, tbl := range a.tableInfos {
+		if tbl.tblPath == tblPath {
+			return &tbl
+		}
+	}
+	return nil
+}
+
+type TableInfo struct {
+	name          string
+	tblPath       string
+	numRows       int
+	currentOffset int
 }
 
 // NewApp creates a new App application struct
@@ -33,12 +57,23 @@ type TblDescribe struct {
 	default_    any
 }
 
-func GetTblDescription(db_ *sql.DB, tblPath string) []TblDescribe {
+type TableData struct {
+	TableRows []any  `json:"tableRows"`
+	ErrMsg    string `json:"errMsg"`
+}
+
+func GetTblDescription(db_ *sql.DB, tblPath string, rowOffset int) ([]TblDescribe, string) {
 	tblCols := make([]TblDescribe, 0)
-	queryStr := fmt.Sprintf("DESCRIBE SELECT * FROM delta_scan('%s')", tblPath)
+	queryStr := fmt.Sprintf("DESCRIBE SELECT * FROM delta_scan('%s') OFFSET %d LIMIT %d", tblPath, rowOffset, ROW_LIMIT)
 	rows, err := db_.Query(queryStr)
+
 	if err != nil {
-		log.Fatal(err)
+		if strings.Contains(err.Error(), "InvalidTableLocation") {
+			return nil, "Invalid table location"
+		} else {
+			log.Println(err.Error())
+			return nil, "Failed to load table path"
+		}
 	}
 	for rows.Next() {
 		var col, tp, ky, xt, df any
@@ -49,15 +84,25 @@ func GetTblDescription(db_ *sql.DB, tblPath string) []TblDescribe {
 		}
 		tblCols = append(tblCols, TblDescribe{col, tp, &nl, ky, xt, df})
 	}
-	return tblCols
+	return tblCols, ""
 }
 
-func (a *App) GetRowsFromTbl(tblPath string) []any {
+func (a *App) GetRowsFromTbl(tblPath string) *TableData {
 
 	rowcols := make([]any, 0)
 
+	tblInfo := &TableInfo{
+		tblPath: tblPath,
+	}
+
+	log.Print(tblInfo)
+
 	// Get table structure
-	cols := GetTblDescription(a.db, tblPath)
+	cols, errMsg := GetTblDescription(a.db, tblPath, 0)
+
+	if errMsg != "" {
+		return &TableData{TableRows: nil, ErrMsg: errMsg}
+	}
 
 	coln := make([]string, 0)
 	for _, v := range cols {
@@ -93,5 +138,5 @@ func (a *App) GetRowsFromTbl(tblPath string) []any {
 
 	// First index contains the column names
 	// Second index contains row values
-	return rowcols
+	return &TableData{rowcols, ""}
 }
