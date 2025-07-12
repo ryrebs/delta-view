@@ -23,18 +23,11 @@ func (a *App) addTableInfo(tblInfo TableInfo) {
 
 func (a *App) getTableInfo(tblPath string) *TableInfo {
 	for _, tbl := range a.tableInfos {
-		if tbl.tblPath == tblPath {
+		if tbl.TblPath == tblPath {
 			return &tbl
 		}
 	}
 	return nil
-}
-
-type TableInfo struct {
-	name          string
-	tblPath       string
-	numRows       int
-	currentOffset int
 }
 
 // NewApp creates a new App application struct
@@ -57,9 +50,13 @@ type TblDescribe struct {
 	default_    any
 }
 
-type TableData struct {
-	TableRows []any  `json:"tableRows"`
-	ErrMsg    string `json:"errMsg"`
+type TableInfo struct {
+	Name          string `json:"name"`
+	TblPath       string `json:"tblPath"`
+	Rows          []any  `json:"rows"`
+	NumRows       int    `json:"numRows"`
+	CurrentOffset int    `json:"currOffset"`
+	ErrMsg        string `json:"errMsg"`
 }
 
 func GetTblDescription(db_ *sql.DB, tblPath string, rowOffset int) ([]TblDescribe, string) {
@@ -87,21 +84,19 @@ func GetTblDescription(db_ *sql.DB, tblPath string, rowOffset int) ([]TblDescrib
 	return tblCols, ""
 }
 
-func (a *App) GetRowsFromTbl(tblPath string) *TableData {
+func (a *App) GetRowsFromTbl(tblPath string) TableInfo {
 
 	rowcols := make([]any, 0)
 
 	tblInfo := &TableInfo{
-		tblPath: tblPath,
+		TblPath: tblPath,
 	}
-
-	log.Print(tblInfo)
 
 	// Get table structure
 	cols, errMsg := GetTblDescription(a.db, tblPath, 0)
 
 	if errMsg != "" {
-		return &TableData{TableRows: nil, ErrMsg: errMsg}
+		return TableInfo{ErrMsg: errMsg}
 	}
 
 	coln := make([]string, 0)
@@ -114,8 +109,11 @@ func (a *App) GetRowsFromTbl(tblPath string) *TableData {
 	query := fmt.Sprintf("SELECT * FROM delta_scan('%s') LIMIT 1000", tblPath)
 	rows, err := a.db.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		return TableInfo{ErrMsg: err.Error()}
 	}
+
+	tblName_ := strings.Split(tblPath, "/")
+	tblInfo.Name = tblName_[len(tblName_)-2]
 
 	for rows.Next() {
 		valuesP := make([]any, 0)
@@ -133,10 +131,10 @@ func (a *App) GetRowsFromTbl(tblPath string) *TableData {
 			derefValuesP = append(derefValuesP, *v.(*any))
 		}
 		rowcols = append(rowcols, derefValuesP)
-
 	}
 
 	// First index contains the column names
 	// Second index contains row values
-	return &TableData{rowcols, ""}
+	tblInfo.Rows = rowcols
+	return *tblInfo
 }
