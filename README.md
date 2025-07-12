@@ -1,4 +1,4 @@
-# delta-view
+# DeltaView
 
 #### View delta tables
 

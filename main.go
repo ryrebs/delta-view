@@ -9,10 +9,14 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+//go:embed build/appicon.png
+var IconBytes []byte
 
 func main() {
 	// Init db
@@ -27,7 +31,7 @@ func main() {
 
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:     "delta-view",
+		Title:     "DeltaView",
 		MinWidth:  1024,
 		MinHeight: 768,
 		AssetServer: &assetserver.Options{
@@ -35,6 +39,9 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
+		Linux: &linux.Options{
+			Icon: IconBytes,
+		},
 		Bind: []any{
 			app,
 		},
