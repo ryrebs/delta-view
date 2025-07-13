@@ -1,4 +1,9 @@
-# DeltaView - simple gui for viewing delta tables.
+<p align="center">
+  <img src="./build/appicon.png" width="150" alt="App Logo"/>
+</p>
+<p align="center">
+  DeltaView - simple gui for viewing delta tables.
+<p>
 
 ![DeltaView](./DeltaView.png)
 
