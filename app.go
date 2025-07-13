@@ -59,6 +59,8 @@ type TableInfo struct {
 	ErrMsg        string `json:"errMsg"`
 }
 
+var TableInfos []TableInfo
+
 func GetTblDescription(db_ *sql.DB, tblPath string, rowOffset int) ([]TblDescribe, string) {
 	tblCols := make([]TblDescribe, 0)
 	queryStr := fmt.Sprintf("DESCRIBE SELECT * FROM delta_scan('%s') OFFSET %d LIMIT %d", tblPath, rowOffset, ROW_LIMIT)
@@ -84,10 +86,28 @@ func GetTblDescription(db_ *sql.DB, tblPath string, rowOffset int) ([]TblDescrib
 	return tblCols, ""
 }
 
+func getTable(tblName string) *TableInfo {
+	for _, v := range TableInfos {
+		if v.Name == tblName {
+			return &v
+		}
+	}
+	return nil
+}
+
 func (a *App) GetRowsFromTbl(tblPath string) TableInfo {
 
-	rowcols := make([]any, 0)
+	// Get table name if exists
+	tblName_ := strings.Split(tblPath, "/")
+	tblName := tblName_[len(tblName_)-2]
 
+	tblInfoFound := getTable(tblName)
+	if tblInfoFound != nil {
+		return *tblInfoFound
+	}
+
+	// else query table
+	rowcols := make([]any, 0)
 	tblInfo := &TableInfo{
 		TblPath: tblPath,
 	}
@@ -112,9 +132,7 @@ func (a *App) GetRowsFromTbl(tblPath string) TableInfo {
 		return TableInfo{ErrMsg: err.Error()}
 	}
 
-	tblName_ := strings.Split(tblPath, "/")
-	tblInfo.Name = tblName_[len(tblName_)-2]
-
+	tblInfo.Name = tblName
 	for rows.Next() {
 		valuesP := make([]any, 0)
 		for range len(coln) {
@@ -136,5 +154,7 @@ func (a *App) GetRowsFromTbl(tblPath string) TableInfo {
 	// First index contains the column names
 	// Second index contains row values
 	tblInfo.Rows = rowcols
+	TableInfos = append(TableInfos, *tblInfo)
+
 	return *tblInfo
 }

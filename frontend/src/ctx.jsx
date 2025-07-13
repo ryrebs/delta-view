@@ -5,38 +5,29 @@ const TableContext = React.createContext();
 export { TableContext };
 
 export default ({ children }) => {
-  const [tableInfos, setTableInfos] = React.useState([]);
+  const [tableNames, setTableNames] = React.useState({});
+  const [activeTable, setActiveTableName] = React.useState();
 
-  const addTableInfo = (tblInfo) => {
-    setTableInfos((t) => {
-      for (let tbl of t) {
-        if (tbl.active) {
-          tbl.active = false;
-        }
+  const addTable = (name, path) => {
+    setTableNames((t) => {
+      if (!Object.keys(t).includes(name)) {
+        return { ...t, ...{ [name]: path } };
       }
-      return [...t, tblInfo];
+      return t;
     });
   };
 
-  const setActiveTable = (tblName) => {
-    setTableInfos((t) => {
-      for (let tbl of t) {
-        if (tbl.name === tblName) {
-          tbl.active = true;
-        } else {
-          tbl.active = false;
-        }
-      }
-      return [...t];
-    });
+  const setActiveTable = (tblInfo) => {
+    setActiveTableName(tblInfo);
   };
 
   return (
     <TableContext.Provider
       value={{
-        tableInfos,
-        addTableInfo,
+        tableNames,
+        addTable,
         setActiveTable,
+        activeTable,
       }}
     >
       {children}

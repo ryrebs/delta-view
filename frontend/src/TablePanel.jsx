@@ -41,7 +41,7 @@ const StyledTableIcon = styled(FontAwesomeIcon)({
 });
 
 export default () => {
-  const { addTableInfo, tableInfos, setActiveTable } =
+  const { addTable, tableNames, activeTable, setActiveTable } =
     React.useContext(TableContext);
   const [err, setErr] = useState("");
   const [tblPath, setTblPath] = useState("");
@@ -49,52 +49,64 @@ export default () => {
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  function loadTbl() {
+  const loadTableFromPath = async (tp) => {
     const tblInfo = {
       rows: [],
       cols: [],
       name: "",
-      active: true,
     };
-
-    if (tblPath != "" && tblPath != null) {
-      GetRowsFromTbl(tblPath)
-        .then((v) => {
-          const { rows, errMsg, name } = v;
-          if (errMsg !== "") {
-            setErr(errMsg);
-          } else {
-            // Get col names
-            const dtCols = [];
-            const dtColsKeys = [];
-            for (let cl of rows[0]) {
-              dtCols.push({ field: cl, headerName: cl, width: 150 });
-              dtColsKeys.push(cl);
-            }
-            tblInfo.cols = dtCols;
-
-            // Get rows
-            const dtRows = [];
-            for (let cl of rows.slice(1)) {
-              const dtRow = {};
-              dtRow["id"] = cl[0];
-              for (let i = 0; i < dtColsKeys.length; i++) {
-                dtRow[dtColsKeys[i]] = cl[i];
-              }
-              dtRows.push(dtRow);
-            }
-            tblInfo.rows = dtRows;
-            tblInfo.name = name;
-            addTableInfo(tblInfo);
-            setErr("");
-            handleClose();
+    const tbp = tp === null || tp === undefined ? tblPath : tp;
+    try {
+      if (tbp) {
+        const data = await GetRowsFromTbl(tbp);
+        const { rows, errMsg, name } = data;
+        if (errMsg !== "") {
+          setErr(errMsg);
+        } else {
+          // Get col names
+          const dtCols = [];
+          const dtColsKeys = [];
+          for (let cl of rows[0]) {
+            dtCols.push({ field: cl, headerName: cl, width: 150 });
+            dtColsKeys.push(cl);
           }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+          tblInfo.cols = dtCols;
+
+          // Get rows
+          const dtRows = [];
+          for (let cl of rows.slice(1)) {
+            const dtRow = {};
+            dtRow["id"] = cl[0];
+            for (let i = 0; i < dtColsKeys.length; i++) {
+              dtRow[dtColsKeys[i]] = cl[i];
+            }
+            dtRows.push(dtRow);
+          }
+          tblInfo.rows = dtRows;
+          tblInfo.name = name;
+          setActiveTable(tblInfo);
+          addTable(name, tbp);
+          setErr("");
+          handleClose();
+        }
+      }
+    } catch (error) {
+      console.log(error);
     }
-  }
+  };
+
+  const loadTableFromPathCB = React.useCallback(
+    (pt) => loadTableFromPath(pt),
+    [tblPath]
+  );
+
+  const loadInactive = (tblName) => {
+    if (tblName && tableNames[tblName]) {
+      const pt = tableNames[tblName];
+      setTblPath(pt);
+      loadTableFromPathCB(pt);
+    }
+  };
 
   return (
     <>
@@ -138,39 +150,49 @@ export default () => {
             height: "100%",
           }}
         >
-          {tableInfos.map((tbl) => (
-            <ListItem
-              sx={{
-                minWidth: "250px",
-                justifyContent: "space-between",
-                columnGap: "10px",
-              }}
-            >
-              <>
-                <StyledTableIcon
-                  icon={faTable}
-                  color={tbl.active ? iconColorActive : iconColorPrim}
-                  onClick={() => setActiveTable(tbl.name)}
-                />
-                <ListItemText
-                  sx={{
-                    color: textColor,
-                  }}
-                  primary={tbl.name}
-                />
-              </>
+          {tableNames &&
+            Object.keys(tableNames).map((tbl) => (
+              <ListItem
+                sx={{
+                  minWidth: "250px",
+                  justifyContent: "space-between",
+                  columnGap: "10px",
+                }}
+              >
+                <>
+                  <StyledTableIcon
+                    icon={faTable}
+                    color={
+                      tbl === activeTable.name ? iconColorActive : iconColorPrim
+                    }
+                    onClick={() => {
+                      console.log(
+                        activeTable.name !== tbl,
+                        activeTable.name,
+                        tbl
+                      );
+                      activeTable.name !== tbl && loadInactive(tbl);
+                    }}
+                  />
+                  <ListItemText
+                    sx={{
+                      color: textColor,
+                    }}
+                    primary={tbl}
+                  />
+                </>
 
-              <IconButton edge="end" aria-label="delete">
-                <GridDeleteIcon
-                  sx={{
-                    color: textWarningColor,
-                    marginLeft: "1rem",
-                    fontSize: "16px",
-                  }}
-                />
-              </IconButton>
-            </ListItem>
-          ))}
+                <IconButton edge="end" aria-label="delete">
+                  <GridDeleteIcon
+                    sx={{
+                      color: textWarningColor,
+                      marginLeft: "1rem",
+                      fontSize: "16px",
+                    }}
+                  />
+                </IconButton>
+              </ListItem>
+            ))}
         </List>
       </Grid>
       <Modal
@@ -183,6 +205,7 @@ export default () => {
           <Box
             sx={{
               textAlign: "left",
+              marginBottom: "8px",
             }}
           >
             <Typography color={textWarningColor} variant="p">
@@ -209,7 +232,7 @@ export default () => {
                 textTransform: "none",
                 color: textColor,
               }}
-              onClick={loadTbl}
+              onClick={() => loadTableFromPathCB()}
             >
               Open
             </Button>

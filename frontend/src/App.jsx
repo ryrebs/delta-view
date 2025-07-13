@@ -7,6 +7,7 @@ import styled from "@mui/styled-engine";
 import TableContextProvider from "./ctx";
 import TablePanel from "./TablePanel";
 import TableData from "./TableData";
+import Paper from "@mui/material/Paper";
 
 const StyledGridContainer = styled(Grid)(() => ({
   justifyContent: "center",
@@ -41,7 +42,7 @@ function App() {
             <TablePanel />
           </Grid>
           <Grid>
-            <h1>Query</h1>
+            <Paper />
           </Grid>
         </StyledGridContainer>
       </TableContextProvider>
