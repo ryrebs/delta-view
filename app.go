@@ -95,6 +95,19 @@ func getTable(tblName string) *TableInfo {
 	return nil
 }
 
+func (a *App) RemoveTable(tblName string) (found int) {
+	var newTableInfos []TableInfo
+	for _, v := range TableInfos {
+		if v.Name == tblName {
+			found++
+		} else {
+			newTableInfos = append(newTableInfos, v)
+		}
+	}
+	a.tableInfos = newTableInfos
+	return found
+}
+
 func (a *App) GetRowsFromTbl(tblPath string) TableInfo {
 
 	// Get table name if exists

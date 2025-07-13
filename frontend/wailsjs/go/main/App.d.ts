@@ -3,3 +3,5 @@
 import {main} from '../models';
 
 export function GetRowsFromTbl(arg1:string):Promise<main.TableInfo>;
+
+export function RemoveTable(arg1:string):Promise<number>;

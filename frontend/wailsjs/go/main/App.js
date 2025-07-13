@@ -5,3 +5,7 @@
 export function GetRowsFromTbl(arg1) {
   return window['go']['main']['App']['GetRowsFromTbl'](arg1);
 }
+
+export function RemoveTable(arg1) {
+  return window['go']['main']['App']['RemoveTable'](arg1);
+}

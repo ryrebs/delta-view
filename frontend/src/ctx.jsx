@@ -21,6 +21,14 @@ export default ({ children }) => {
     setActiveTableName(tblInfo);
   };
 
+  const removeTableName = (name) => {
+    setTableNames((t) => {
+      const nT = { ...t };
+      delete nT[name];
+      return { ...nT };
+    });
+  };
+
   return (
     <TableContext.Provider
       value={{
@@ -28,6 +36,7 @@ export default ({ children }) => {
         addTable,
         setActiveTable,
         activeTable,
+        removeTableName,
       }}
     >
       {children}

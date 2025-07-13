@@ -1,5 +1,5 @@
 import "./App.css";
-import { GetRowsFromTbl } from "../wailsjs/go/main/App";
+import { GetRowsFromTbl, RemoveTable } from "../wailsjs/go/main/App";
 import React, { useState } from "react";
 import { GridAddIcon, GridDeleteIcon } from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
@@ -41,7 +41,7 @@ const StyledTableIcon = styled(FontAwesomeIcon)({
 });
 
 export default () => {
-  const { addTable, tableNames, activeTable, setActiveTable } =
+  const { addTable, tableNames, activeTable, setActiveTable, removeTableName } =
     React.useContext(TableContext);
   const [err, setErr] = useState("");
   const [tblPath, setTblPath] = useState("");
@@ -108,6 +108,13 @@ export default () => {
     }
   };
 
+  const removeTable = async (tblName) => {
+    const removed = await RemoveTable(tblName);
+    if (removed > 0) {
+      removeTableName(tblName);
+    }
+  };
+
   return (
     <>
       <Grid
@@ -165,14 +172,9 @@ export default () => {
                     color={
                       tbl === activeTable.name ? iconColorActive : iconColorPrim
                     }
-                    onClick={() => {
-                      console.log(
-                        activeTable.name !== tbl,
-                        activeTable.name,
-                        tbl
-                      );
-                      activeTable.name !== tbl && loadInactive(tbl);
-                    }}
+                    onClick={() =>
+                      activeTable.name !== tbl && loadInactive(tbl)
+                    }
                   />
                   <ListItemText
                     sx={{
@@ -181,16 +183,18 @@ export default () => {
                     primary={tbl}
                   />
                 </>
-
-                <IconButton edge="end" aria-label="delete">
-                  <GridDeleteIcon
-                    sx={{
-                      color: textWarningColor,
-                      marginLeft: "1rem",
-                      fontSize: "16px",
-                    }}
-                  />
-                </IconButton>
+                {activeTable.name !== tbl && (
+                  <IconButton edge="end" aria-label="delete">
+                    <GridDeleteIcon
+                      sx={{
+                        color: textWarningColor,
+                        marginLeft: "1rem",
+                        fontSize: "16px",
+                      }}
+                      onClick={() => removeTable(tbl)}
+                    />
+                  </IconButton>
+                )}
               </ListItem>
             ))}
         </List>
