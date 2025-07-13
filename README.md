@@ -1,8 +1,17 @@
-# DeltaView
+# DeltaView - simple gui for viewing delta tables.
 
-#### View delta tables
+![DeltaView](./DeltaView.png)
+
+#### Building for prod
+
+    wails build
+
+#### Development
+
+    wails dev
 
 #### (Todo) Features
 
-- Table view for select queries
-- Other features as needed...
+- [x] Table view for select queries
+- [ ] Table updates
+- [ ] Other features as needed...
